@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Control - Servidor Web Apache</title>
+    <!-- Iconos de FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #ff6a00;
+            --secondary: #ee0979;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --success: #22c55e;
+            --border: #334155;
+        }
+
+        .light-theme {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Encabezado */
+        header {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            padding: 2rem 1.5rem;
+            text-align: center;
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.6rem 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+        .theme-toggle:hover { background: rgba(255,255,255,0.3); }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            opacity: 0.95;
+        }
+
+        /* Contenedor Principal Centrado */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2.5rem 1rem;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Tarjetas */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.8rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.8rem;
+        }
+
+        .card-header h3 {
+            font-size: 1.2rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .status-badge {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+            border: 1px solid var(--success);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .status-badge .dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .info-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .info-list li {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+        }
+
+        .info-list li span {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Barras de Progreso */
+        .metric-box {
+            margin-top: 1rem;
+        }
+        .metric-title {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+            color: var(--text-muted);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--primary));
+            border-radius: 10px;
+        }
+
+        /* Botón Interactivo */
+        .btn-action {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1.2rem;
+            box-shadow: 0 4px 15px rgba(255, 106, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 106, 0, 0.4);
+        }
+        .btn-action:active { transform: translateY(0); }
+
+        .terminal-box {
+            background: #000;
+            color: #00ff66;
+            font-family: 'Consolas', 'Courier New', monospace;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fa-solid fa-moon"></i> <span id="theme-text">Modo Claro</span>
+        </button>
+        <h1><i class="fa-server"></i> Panel de Control Apache</h1>
+        <p>Trabajo Práctico de Investigación e Implementación de Servidores Web</p>
+    </header>
+
+    <div class="main-wrapper">
+        <div class="dashboard-container">
+            
+            <!-- Tarjeta 1: Especificaciones -->
+            <div class="card">
+                <div>
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-microchip"></i> Entorno de Red</h3>
+                    </div>
+                    <ul class="info-list">
+                        <li>Servidor: <span>Apache HTTP Server</span></li>
+                        <li>Entorno local: <span>XAMPP v8.4</span></li>
+                        <li>Protocolos: <span>HTTP / HTTPS</span></li>
+                        <li>Puerto HTTP: <span>80 (Listen)</span></li>
+                        <li>Puerto SSL: <span>443</span></li>
+                        <li>Directorio Web: <span>C:\xampp\htdocs</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tarjeta 2: Estado y Rendimiento -->
+            <div class="card">
+                <div>
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-line"></i> Rendimiento</h3>
+                        <div class="status-badge">
+                            <div class="dot"></div> Online
+                        </div>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <div class="metric-title"><span>Uso de CPU</span><span>12%</span></div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 12%;"></div></div>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric-title"><span>Memoria RAM (Apache)</span><span>48 MB</span></div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 25%;"></div></div>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric-title"><span>Solicitudes/seg</span><span>14 req/s</span></div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 40%;"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta 3: Simulador HTTP -->
+            <div class="card">
+                <div>
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-network-wired"></i> Prueba HTTP</h3>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">
+                        Prueba la comunicación cliente-servidor enviando una solicitud interna al puerto 80.
+                    </p>
+                    <button class="btn-action" onclick="simulateRequest()">
+                        <i class="fa-solid fa-paper-plane"></i> Enviar Petición GET
+                    </button>
+                    <div class="terminal-box" id="terminal-out">
+                        > Servidor a la espera de peticiones...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta 4: Reloj y Módulos (Ancho Completo) -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-clock"></i> Diagnóstico del Servidor en Tiempo Real</h3>
+                    <span id="server-time" style="font-weight: bold; color: var(--accent);">--:--:--</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+                    <div>
+                        <strong style="font-size: 0.9rem; color: var(--text-muted);">Módulos Activos:</strong>
+                        <p style="margin-top: 0.3rem; font-size: 0.9rem;">
+                            <i class="fa-solid fa-check" style="color:var(--success)"></i> mod_rewrite<br>
+                            <i class="fa-solid fa-check" style="color:var(--success)"></i> mod_ssl<br>
+                            <i class="fa-solid fa-check" style="color:var(--success)"></i> mod_mime
+                        </p>
+                    </div>
+                    <div>
+                        <strong style="font-size: 0.9rem; color: var(--text-muted);">Documento Raíz:</strong>
+                        <p style="margin-top: 0.3rem; font-size: 0.9rem;"><code>index.html</code> (Cargado correctamente)</p>
+                    </div>
+                    <div>
+                        <strong style="font-size: 0.9rem; color: var(--text-muted);">Código de Respuesta:</strong>
+                        <p style="margin-top: 0.3rem; font-size: 0.9rem; color: var(--success); font-weight: bold;">HTTP/1.1 200 OK</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>Implementación de Servidor Web con XAMPP & Apache &copy; 2026 - Proyecto Académico</p>
+    </footer>
+
+    <!-- JavaScript Interactivo -->
+    <script>
+        // Reloj en tiempo real
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString() + ' - ' + now.toLocaleDateString();
+            document.getElementById('server-time').innerText = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Alternar tema Claro / Oscuro
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            const isLight = document.body.classList.contains('light-theme');
+            document.getElementById('theme-text').innerText = isLight ? 'Modo Oscuro' : 'Modo Claro';
+            const icon = document.querySelector('.theme-toggle i');
+            icon.className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+
+        // Simulador de peticiones HTTP
+        function simulateRequest() {
+            const out = document.getElementById('terminal-out');
+            out.style.color = '#38bdf8';
+            out.innerText = '> Enviando GET /index.html HTTP/1.1...';
+            
+            setTimeout(() => {
+                const latency = Math.floor(Math.random() * 12) + 4;
+                out.style.color = '#00ff66';
+                out.innerText = `> HTTP/1.1 200 OK (${latency}ms) - Host: localhost`;
+            }, 600);
+        }
+    </script>
+</body>
+</html>
